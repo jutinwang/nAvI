@@ -1,12 +1,61 @@
 import gradio as gr
+import os
+from groq import Groq
 
-def greet(name, intensity):
-    return "Hello, " + name + "!" * int(intensity)
+# Initialize Groq client
+api_key = os.getenv("GROQ_API_KEY")
+client = Groq(api_key=api_key)
 
-demo = gr.Interface(
-    fn=greet,
-    inputs=["text", "slider"],
-    outputs=["text"],
-)
+# Initialize conversation history
+conversation_history = []
 
-demo.launch()
+def chat_with_bot_stream(user_input):
+    global conversation_history
+    conversation_history.append({"role": "user", "content": user_input})
+    
+    if len(conversation_history) == 1:
+        conversation_history.insert(0, {
+            "role": "system",
+            "content": "You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. You speak like navi but are still clear on steps."
+        },)
+    
+    completion = client.chat.completions.create(
+        model="llama3-70b-8192",
+        messages=conversation_history,
+        temperature=1,
+        max_tokens=1024,
+        top_p=1,
+        stream=True,
+        stop=None,
+    )
+    
+    response_content = ""
+    for chunk in completion:
+        response_content += chunk.choices[0].delta.content or ""
+    
+    conversation_history.append({"role": "assistant", "content": response_content})
+    
+    return [(msg["content"] if msg["role"] == "user" else None, 
+             msg["content"] if msg["role"] == "assistant" else None) 
+            for msg in conversation_history]
+
+# Function to generate a storyboard
+def generate_storyboard(scenario):
+    if not scenario.strip():
+        return "Hey Look! I'm here to to help, ask me if you have any questions ok?"
+    
+    messages = [
+        {"role": "system", "content": """You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. You speak like navi but are still clear on steps."""},
+        {"role": "user", "content": f"Answer my question about the legend of zelda ocarina of time: {scenario}"}
+    ]
+    
+    completion = client.chat.completions.create(
+        model="llama3-70b-8192",
+        messages=messages,
+        temperature=1,
+        max_tokens=1024,
+        top_p=1,
+        stream=False,
+        stop=None,
+    )
+    return completion.choices[0].message.content
