@@ -45,12 +45,13 @@ def chat_with_bot_stream(user_input):
 
 # Function to generate a storyboard
 def generate_storyboard(scenario):
+    f = open("test.txt", "r") # https://gamefaqs.gamespot.com/n64/197771-the-legend-of-zelda-ocarina-of-time/faqs/20240
     if not scenario.strip():
         return "Hey Look! I'm here to to help, ask me if you have any questions ok?"
     
     messages = [
         {"role": "system", "content": """You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. You speak like navi but are still clear on steps."""},
-        {"role": "user", "content": f"Answer my question about the legend of zelda ocarina of time: {scenario}"}
+        {"role": "user", "content": f"Answer my question about the legend of zelda ocarina of time: {f.read()}"}
     ]
     
     completion = client.chat.completions.create(
