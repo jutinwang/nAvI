@@ -1,9 +1,13 @@
 import gradio as gr
 import os
 from groq import Groq
+from dotenv import load_dotenv  
+
+# Load env variables
+load_dotenv()
 
 # Initialize Groq client
-api_key = os.getenv("GROQ_API_KEY")
+api_key = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
 # Initialize conversation history
