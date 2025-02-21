@@ -50,26 +50,27 @@ def chat_with_bot_stream(user_input):
             for msg in conversation_history]
 
 # Function to generate a storyboard
-def generate_storyboard(scenario):
-    f = open("test.txt", "r") # https://gamefaqs.gamespot.com/n64/197771-the-legend-of-zelda-ocarina-of-time/faqs/20240
-    if not scenario.strip():
-        return "Hey Look! I'm here to to help, ask me if you have any questions ok?"
-    
+# Function to generate a system prompt based on the selected dungeon
+def generate_system_prompt(dungeon_name):
+    return f"""You are Navi from The Legend of Zelda: Ocarina of Time. Your task is to guide the player through {dungeon_name}. Provide clear and step-by-step instructions in Navi's voice. Stay in character and be helpful!"""
+
+def solve_dungeon(system_prompt, user_message):
     messages = [
-        {"role": "system", "content": """You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. You speak like navi but are still clear on steps."""},
-        {"role": "user", "content": f"Answer my question about the legend of zelda ocarina of time: {f.read()}"}
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_message}
     ]
-    
     completion = client.chat.completions.create(
-        model="llama3-70b-8192",
-        messages=messages,
-        temperature=1,
-        max_tokens=1024,
-        top_p=1,
-        stream=False,
-        stop=None,
+    model="llama3-70b-8192",
+    messages=messages,
+    temperature=1,
+    max_tokens=1024,
+    top_p=1,
+    stream=False,
+    stop=None,
     )
-    return completion.choices[0].message.content 
+    
+    # Access the result using .choices and .message instead of subscripting
+    return completion.choices[0].message.content
 
 def generate_and_play_podcast(chat_history):
     # Convert the script to audio
@@ -94,12 +95,11 @@ def summarize_conversation(chat_history):
     # Return both the script and the audio file path
     return summary, audio_path
 
-
 TITLE = """
 <style>
 h1 { text-align: center; font-size: 24px; margin-bottom: 10px; }
 </style>
-<h1>📖 Storyboard Assistant</h1>
+<h1>Hey, Look! I'm Navi!</h1>
 """
 
 TITLE_Summary = """
@@ -120,12 +120,11 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
                     placeholder="Hey Look! Listen Here!",
                     lines=1
                 )
-                send_button = gr.Button("HYAHH!????")
+                send_button = gr.Button("Help!")
                 podcast_button = gr.Button("Read Recent Message")
             
-            # Chatbot functionality
             send_button.click(
-                fn=chat_with_bot_stream,
+                fn=lambda x: "Navi: " + x,
                 inputs=user_input,
                 outputs=chatbot,
                 queue=True
@@ -140,12 +139,25 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
                 inputs=chatbot,
             )
         
-        with gr.TabItem("📖 Generate Storyboard"):
-            gr.Markdown("## Generate a Storyboard")
-            scenario_input = gr.Textbox(label="Enter your scenario")
-            generate_btn = gr.Button("Generate Storyboard")
+        with gr.TabItem("📜 Dungeon Solver"):
+            gr.Markdown("## Solve a Dungeon!")
+            gr.Markdown('Choose a dungeon to solve:')
+            
             storyboard_output = gr.Textbox(label="Generated Storyboard", interactive=False)
-            generate_btn.click(generate_storyboard, inputs=scenario_input, outputs=storyboard_output)
+            user_input_box = gr.Textbox(label="Your Question", placeholder="Ask Navi about this dungeon!")
+            
+            for dungeon in [
+                "Inside the Deku Tree", "Dodongo’s Cavern", "Inside Jabu-Jabu’s Belly", 
+                "Forest Temple", "Fire Temple", "Water Temple", "Shadow Temple", 
+                "Spirit Temple", "Ganon’s Castle"]:
+                
+                dungeon_button = gr.Button(dungeon)
+                dungeon_button.click(
+                    fn=lambda dungeon_name, user_input: solve_dungeon
+                (generate_system_prompt(dungeon_name), user_input),
+                    inputs=[gr.Textbox(value=dungeon, visible=False), user_input_box],
+                    outputs=storyboard_output
+                )
 
         with gr.TabItem("Summarize My Adventure"):
             gr.HTML(TITLE_Summary)
