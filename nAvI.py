@@ -3,9 +3,11 @@ import os
 from groq import Groq
 from dotenv import load_dotenv
 import tempfile
-from audio import gtpodcast_script_to_audio
 import time
 from pygame import mixer
+
+from audio import tts_generator
+from summarizer import generate_summary
 
 # Load env variables
 load_dotenv()
@@ -16,7 +18,6 @@ client = Groq(api_key=api_key)
 
 # Initialize conversation history
 conversation_history = []
-boxChecked = False
 
 def chat_with_bot_stream(user_input):
     global conversation_history
@@ -71,34 +72,41 @@ def generate_storyboard(scenario):
     return completion.choices[0].message.content 
 
 def generate_and_play_podcast(chat_history):
-    # Extract only user queries from the chat history
-    user_queries = [msg[1] for msg in chat_history if msg[1]]
-    # Combine user queries into a single text
-    conversation_text = "\n".join(user_queries)
-    
-    # Generate podcast script
-    podcast_script = "filler"
     # Convert the script to audio
-    audio_path = gtpodcast_script_to_audio(chat_history[-1][1])
-    # Return both the script and the audio file path
+    audio_path = tts_generator(chat_history[-1][1])
+
     mixer.init()
     mixer.music.load(audio_path)
     mixer.music.play()
     while mixer.music.get_busy():  # wait for music to finish playing
         time.sleep(1)
 
-    # return audio_path
+def summarize_conversation(chat_history):
+    # Extract only user queries from the chat history
+    user_queries = [msg[1] for msg in chat_history if msg[1]]
+    # Combine user queries into a single text
+    conversation_text = "\n".join(user_queries)
+    
+    # Generate podcast script
+    summary = generate_summary(conversation_text)
+    # Convert the script to audio
+    audio_path = tts_generator(summary)
+    # Return both the script and the audio file path
+    return summary, audio_path
 
-def on_podcast_toggle(checked, chat_history):
-    # When the checkbox is checked, run the function; otherwise return empty values.
-    if checked:
-        return generate_and_play_podcast(chat_history)
 
 TITLE = """
 <style>
 h1 { text-align: center; font-size: 24px; margin-bottom: 10px; }
 </style>
 <h1>📖 Storyboard Assistant</h1>
+"""
+
+TITLE_Summary = """
+<style>
+h1 { text-align: center; font-size: 24px; margin-bottom: 10px; }
+</style>
+<h1>🫗 Let Me Summarize Your Story! </h1>
 """
 
 with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet", neutral_hue="stone")) as demo:
@@ -113,9 +121,7 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
                     lines=1
                 )
                 send_button = gr.Button("HYAHH!????")
-                podcast_button = gr.Checkbox(label="Test", value=False)
-                # podcast_script_output = gr.Textbox(label="Podcast Transcript", placeholder="Podcast script will appear here.", lines=5)
-                # podcast_audio_output = gr.Audio(label="Podcast Audio")
+                podcast_button = gr.Button("Read Recent Message")
             
             # Chatbot functionality
             send_button.click(
@@ -129,10 +135,9 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
                 outputs=user_input
             )
 
-            podcast_button.change(
-                fn=on_podcast_toggle,
-                inputs=[podcast_button, chatbot],  # chatbot holds the chat history
-                outputs= chatbot #podcast_audio_output
+            podcast_button.click(
+                fn=generate_and_play_podcast,
+                inputs=chatbot,
             )
         
         with gr.TabItem("📖 Generate Storyboard"):
@@ -141,5 +146,19 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
             generate_btn = gr.Button("Generate Storyboard")
             storyboard_output = gr.Textbox(label="Generated Storyboard", interactive=False)
             generate_btn.click(generate_storyboard, inputs=scenario_input, outputs=storyboard_output)
+
+        with gr.TabItem("Summarize My Adventure"):
+            gr.HTML(TITLE_Summary)
+            summary_button = gr.Button("Summarize!")
+            summary_script_output = gr.Textbox(label="Transcript of Summary", placeholder="Summary Here.", lines=5)
+            summary_audio_output = gr.Audio(label="Summary Audio")
+            
+            # Generate podcast script and audio
+            summary_button.click(
+                fn=summarize_conversation,  # This should be defined in your actual application
+                inputs= chatbot,  # Pass the chat history
+                outputs=[summary_script_output, summary_audio_output]
+            )
+
 
 demo.launch()

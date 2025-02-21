@@ -2,7 +2,7 @@ from gtts import gTTS
 from pydub import AudioSegment
 import tempfile
 
-def gtpodcast_script_to_audio(script: str) -> str:
+def tts_generator(script: str) -> str:
     if not script.strip():
         raise ValueError("No script provided for audio conversion.")
 
