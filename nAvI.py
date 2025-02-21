@@ -1,7 +1,13 @@
 import gradio as gr
 import os
 from groq import Groq
-from dotenv import load_dotenv  
+from dotenv import load_dotenv
+import tempfile
+import time
+from pygame import mixer
+
+from audio import tts_generator
+from summarizer import generate_summary
 
 # Load env variables
 load_dotenv()
@@ -62,15 +68,45 @@ def solve_dungeon(system_prompt, user_message):
     stream=False,
     stop=None,
     )
-
+    
     # Access the result using .choices and .message instead of subscripting
     return completion.choices[0].message.content
+
+def generate_and_play_podcast(chat_history):
+    # Convert the script to audio
+    audio_path = tts_generator(chat_history[-1][1])
+
+    mixer.init()
+    mixer.music.load(audio_path)
+    mixer.music.play()
+    while mixer.music.get_busy():  # wait for music to finish playing
+        time.sleep(1)
+
+def summarize_conversation(chat_history):
+    # Extract only user queries from the chat history
+    user_queries = [msg[1] for msg in chat_history if msg[1]]
+    # Combine user queries into a single text
+    conversation_text = "\n".join(user_queries)
+    
+    # Generate podcast script
+    summary = generate_summary(conversation_text)
+    # Convert the script to audio
+    audio_path = tts_generator(summary)
+    # Return both the script and the audio file path
+    return summary, audio_path
 
 TITLE = """
 <style>
 h1 { text-align: center; font-size: 24px; margin-bottom: 10px; }
 </style>
 <h1>Hey, Look! I'm Navi!</h1>
+"""
+
+TITLE_Summary = """
+<style>
+h1 { text-align: center; font-size: 24px; margin-bottom: 10px; }
+</style>
+<h1>🫗 Let Me Summarize Your Story! </h1>
 """
 
 with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet", neutral_hue="stone")) as demo:
@@ -85,6 +121,7 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
                     lines=1
                 )
                 send_button = gr.Button("Help!")
+                podcast_button = gr.Button("Read Recent Message")
             
             send_button.click(
                 fn=lambda x: "Navi: " + x,
@@ -95,6 +132,11 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
                 fn=lambda: "",
                 inputs=None,
                 outputs=user_input
+            )
+
+            podcast_button.click(
+                fn=generate_and_play_podcast,
+                inputs=chatbot,
             )
         
         with gr.TabItem("📜 Dungeon Solver"):
@@ -116,5 +158,19 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
                     inputs=[gr.Textbox(value=dungeon, visible=False), user_input_box],
                     outputs=storyboard_output
                 )
+
+        with gr.TabItem("Summarize My Adventure"):
+            gr.HTML(TITLE_Summary)
+            summary_button = gr.Button("Summarize!")
+            summary_script_output = gr.Textbox(label="Transcript of Summary", placeholder="Summary Here.", lines=5)
+            summary_audio_output = gr.Audio(label="Summary Audio")
+            
+            # Generate podcast script and audio
+            summary_button.click(
+                fn=summarize_conversation,  # This should be defined in your actual application
+                inputs= chatbot,  # Pass the chat history
+                outputs=[summary_script_output, summary_audio_output]
+            )
+
 
 demo.launch()
