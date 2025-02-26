@@ -2,12 +2,12 @@ from gtts import gTTS
 from pydub import AudioSegment
 import tempfile
 
-def tts_generator(script: str) -> str:
+def tts_generator(script: str, language: str) -> str:
     if not script.strip():
         raise ValueError("No script provided for audio conversion.")
 
     # Generate TTS audio
-    tts = gTTS(text=script, lang="en", tld='ca')  # British English accent
+    tts = gTTS(text=script, lang=language, tld='ca')  # British English accent
     temp_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3").name
     tts.save(temp_audio_path)
 
@@ -17,7 +17,7 @@ def tts_generator(script: str) -> str:
     lowered_pitch_audio = lowered_pitch_audio.set_frame_rate(audio.frame_rate)
 
     # Export the modified audio
-    podcast_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3").name
-    lowered_pitch_audio.export(podcast_path, format="mp3")
+    tts_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3").name
+    lowered_pitch_audio.export(tts_path, format="mp3")
 
-    return podcast_path
+    return tts_path
