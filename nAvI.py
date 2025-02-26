@@ -124,7 +124,7 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
                 podcast_button = gr.Button("Read Recent Message")
             
             send_button.click(
-                fn=lambda x: "Navi: " + x,
+                fn=chat_with_bot_stream,
                 inputs=user_input,
                 outputs=chatbot,
                 queue=True
