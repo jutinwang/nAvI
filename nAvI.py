@@ -104,28 +104,24 @@ def summarize_conversation(chat_history):
     # Return both the script and the audio file path
     return summary, audio_path
 
-def switch_language():
-    global conversation_history, language
-    print(language)
+def switch_language(option):
+    global conversation_history
+    print(option == "English")
 
-    if language == "english":
-        language = "french"
-
+    if option == "English":
         system_prompt = {
             "role": "system",
-            "content": "You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. You speak like Navi but are still clear on steps. Respond only in French."
+            "content": "You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. You speak like Navi but are still clear on steps. Your responses should all be in english."
         }
 
         conversation_history = [system_prompt] + [
             msg for msg in conversation_history if msg["role"] != "system"
         ]
 
-    elif language == "french":
-        language = "english"
-
+    elif option == "French":
         system_prompt = {
             "role": "system",
-            "content": "You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. You speak like Navi but are still clear on steps. Respond only in English."
+            "content": "You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. You speak like Navi but are still clear on steps. Your responses should all be in french."
         }
         
         conversation_history = [system_prompt] + [
@@ -150,7 +146,9 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
     with gr.Tabs():
         with gr.TabItem("💬Chat"):
             gr.HTML(TITLE)
-            language_toggle = gr.Button("En/Fr")
+            # language_toggle = gr.Button("En/Fr")
+            language_toggle = gr.Dropdown(["English", "French"], label="Choose a language")
+
             chatbot = gr.Chatbot(label="Navi")
             with gr.Row():
                 user_input = gr.Textbox(
@@ -177,9 +175,11 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
                 inputs=chatbot,
             )
 
-            language_toggle.click(
-                fn=switch_language,
-            )
+            # language_toggle.click(
+            #     fn=switch_language,
+            # )
+
+            language_toggle.change(switch_language, inputs=language_toggle, outputs=None)
         
         with gr.TabItem("📜 Dungeon Solver"):
             gr.Markdown("## Solve a Dungeon!")
