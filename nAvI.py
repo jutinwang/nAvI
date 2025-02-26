@@ -19,6 +19,9 @@ client = Groq(api_key=api_key)
 # Initialize conversation history
 conversation_history = []
 
+# language toggler
+language = "english"
+
 def chat_with_bot_stream(user_input):
     global conversation_history
     conversation_history.append({"role": "user", "content": user_input})
@@ -49,7 +52,6 @@ def chat_with_bot_stream(user_input):
              msg["content"] if msg["role"] == "assistant" else None) 
             for msg in conversation_history]
 
-# Function to generate a storyboard
 # Function to generate a system prompt based on the selected dungeon
 def generate_system_prompt(dungeon_name):
     return f"""You are Navi from The Legend of Zelda: Ocarina of Time. Your task is to guide the player through {dungeon_name}. Provide clear and step-by-step instructions in Navi's voice. Stay in character and be helpful!"""
@@ -72,9 +74,16 @@ def solve_dungeon(system_prompt, user_message):
     # Access the result using .choices and .message instead of subscripting
     return completion.choices[0].message.content
 
-def generate_and_play_podcast(chat_history):
+def tts(chat_history):
+    global language
+    lang = "en"
     # Convert the script to audio
-    audio_path = tts_generator(chat_history[-1][1])
+    if language == "english":
+        lang = "en"
+    elif language == "french":
+        lang = "fr"
+    
+    audio_path = tts_generator(chat_history[-1][1], lang)
 
     mixer.init()
     mixer.music.load(audio_path)
@@ -95,6 +104,30 @@ def summarize_conversation(chat_history):
     # Return both the script and the audio file path
     return summary, audio_path
 
+def switch_language(option):
+    global conversation_history
+    print(option == "English")
+
+    if option == "English":
+        system_prompt = {
+            "role": "system",
+            "content": "You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. You speak like Navi but are still clear on steps. Your responses should all be in english."
+        }
+
+        conversation_history = [system_prompt] + [
+            msg for msg in conversation_history if msg["role"] != "system"
+        ]
+
+    elif option == "French":
+        system_prompt = {
+            "role": "system",
+            "content": "You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. You speak like Navi but are still clear on steps. Your responses should all be in french."
+        }
+        
+        conversation_history = [system_prompt] + [
+            msg for msg in conversation_history if msg["role"] != "system"
+        ]
+
 TITLE = """
 <style>
 h1 { text-align: center; font-size: 24px; margin-bottom: 10px; }
@@ -113,6 +146,9 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
     with gr.Tabs():
         with gr.TabItem("💬Chat"):
             gr.HTML(TITLE)
+            # language_toggle = gr.Button("En/Fr")
+            language_toggle = gr.Dropdown(["English", "French"], label="Choose a language")
+
             chatbot = gr.Chatbot(label="Navi")
             with gr.Row():
                 user_input = gr.Textbox(
@@ -121,7 +157,7 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
                     lines=1
                 )
                 send_button = gr.Button("Help!")
-                podcast_button = gr.Button("Read Recent Message")
+                tts_button = gr.Button("Read Recent Message")
             
             send_button.click(
                 fn=chat_with_bot_stream,
@@ -134,10 +170,16 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
                 outputs=user_input
             )
 
-            podcast_button.click(
-                fn=generate_and_play_podcast,
+            tts_button.click(
+                fn=tts,
                 inputs=chatbot,
             )
+
+            # language_toggle.click(
+            #     fn=switch_language,
+            # )
+
+            language_toggle.change(switch_language, inputs=language_toggle, outputs=None)
         
         with gr.TabItem("📜 Dungeon Solver"):
             gr.Markdown("## Solve a Dungeon!")
@@ -171,6 +213,5 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
                 inputs= chatbot,  # Pass the chat history
                 outputs=[summary_script_output, summary_audio_output]
             )
-
 
 demo.launch()
