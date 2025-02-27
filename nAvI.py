@@ -20,7 +20,7 @@ client = Groq(api_key=api_key)
 conversation_history = []
 
 # language toggler
-language = "english"
+language = "en"
 
 def chat_with_bot_stream(user_input):
     global conversation_history
@@ -76,14 +76,7 @@ def solve_dungeon(system_prompt, user_message):
 
 def tts(chat_history):
     global language
-    lang = "en"
-    # Convert the script to audio
-    if language == "english":
-        lang = "en"
-    elif language == "french":
-        lang = "fr"
-    
-    audio_path = tts_generator(chat_history[-1][1], lang)
+    audio_path = tts_generator(chat_history[-1][1], language)
 
     mixer.init()
     mixer.music.load(audio_path)
@@ -105,10 +98,10 @@ def summarize_conversation(chat_history):
     return summary, audio_path
 
 def switch_language(option):
-    global conversation_history
-    print(option == "English")
-
+    global conversation_history, language
+    
     if option == "English":
+        language = "en"
         system_prompt = {
             "role": "system",
             "content": "You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. You speak like Navi but are still clear on steps. Your responses should all be in english."
@@ -119,6 +112,7 @@ def switch_language(option):
         ]
 
     elif option == "French":
+        language = "fr"
         system_prompt = {
             "role": "system",
             "content": "You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. You speak like Navi but are still clear on steps. Your responses should all be in french."
