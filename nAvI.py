@@ -128,37 +128,99 @@ def switch_language(option):
             msg for msg in conversation_history if msg["role"] != "system"
         ]
 
+
+
+theme = gr.themes.Ocean(
+    primary_hue=gr.themes.Color(c100="#003ab5", c200="#002973", c300="#002973", c400="#00206b", c50="#013aba", c500="#001f63", c600="#00104a", c700="#001042", c800="#00103a", c900="#040c2c", c950="#000821"),
+    secondary_hue=gr.themes.Color(c100="#426bc5", c200="#3f65b7", c300="#3a63a5", c400="#2d457f", c50="#4a7bd6", c500="#29427b", c600="#294173", c700="#192952", c800="#192952", c900="#213152", c950="#203152"),
+    neutral_hue=gr.themes.Color(c100="#e0f2fe", c200="#bae6fd", c300="#7dd3fc", c400="#38bdf8", c50="#f0f9ff", c500="#0ea5e9", c600="#0284c7", c700="#0369a1", c800="#66a9e8", c900="#b2f4fc", c950="#66a9e8"),
+    text_size="lg",
+    font=['Italiana', 'ui-sans-serif', gr.themes.GoogleFont('system-ui'), 'sans-serif'],
+).set(
+    body_background_fill='linear-gradient(120deg, *primary_950 0%, *primary_800 40%, *primary_500 70%, *primary_50 100%)',
+    body_background_fill_dark='linear-gradient(120deg, *primary_950 0%, *primary_950 45%, *primary_800 65%, *primary_500 85%, *primary_50 100%)',
+    body_text_color_dark='*neutral_50',
+    body_text_color_subdued='*neutral_300',
+    background_fill_secondary='*primary_800',
+    background_fill_secondary_dark='*primary_500',
+    color_accent='*secondary_50',
+    color_accent_soft='*neutral_600',
+    color_accent_soft_dark='*neutral_800',
+    link_text_color='*secondary_50',
+    link_text_color_active_dark='*neutral_100',
+    code_background_fill='*neutral_950',
+    code_background_fill_dark='*neutral_300',
+    block_background_fill='*block_title_background_fill',
+    block_background_fill_dark='*primary_900',
+    block_info_text_color_dark='*neutral_50',
+    block_label_background_fill='*neutral_900',
+    block_label_background_fill_dark='*neutral_500',
+    block_label_text_color='*primary_500',  # Darker primary color for "Navi" label
+    block_label_text_color_dark='*primary_400',  # Slightly lighter in dark mode
+    block_title_text_color='*neutral_50',
+    block_title_text_color_dark='*neutral_100',
+    accordion_text_color_dark='*neutral_50',
+    button_primary_background_fill='linear-gradient(120deg, *secondary_600 0%, *secondary_600 25%, *primary_500 65%, *primary_600 100%)',
+    button_primary_background_fill_dark='linear-gradient(120deg, *secondary_600 0%, *secondary_600 30%, *primary_500 70%, *primary_600 100%)',
+    button_primary_text_color='*neutral_50',
+    button_primary_text_color_dark='*neutral_100',
+    button_secondary_background_fill='linear-gradient(120deg, *secondary_600 0%, *secondary_600 25%, *primary_500 65%, *primary_600 100%)',
+    button_secondary_background_fill_dark='linear-gradient(120deg, *secondary_950 0%, *secondary_800 40%, *secondary_500 70%, *secondary_50 100%)',
+    button_secondary_text_color='*neutral_50',
+    button_secondary_text_color_dark='*neutral_100'
+)
+
+
+
 TITLE = """
 <style>
-h1 { text-align: center; font-size: 24px; margin-bottom: 10px; }
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px; /* Space between image and text */
+}
+
+.container img {
+    height: 24px; /* Match text size */
+}
+
+h1 {
+    font-size: 24px;
+    margin: 0;
+}
 </style>
-<h1>Hey, Look! I'm Navi!</h1>
+
+<div class="container">
+    <h1>Hey, Look! I'm Navi!</h1>
+</div>
 """
 
 TITLE_Summary = """
 <style>
 h1 { text-align: center; font-size: 24px; margin-bottom: 10px; }
 </style>
-<h1>🫗 Let Me Summarize Your Story! </h1>
+<h1>🗡️🛡️ Let Me Summarize Your Story! </h1>
 """
 
-with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet", neutral_hue="stone")) as demo:
+with gr.Blocks(theme=theme) as demo:
     with gr.Tabs():
-        with gr.TabItem("💬Chat"):
+        with gr.TabItem("💬 Chat"):
             gr.HTML(TITLE)
-            # language_toggle = gr.Button("En/Fr")
             language_toggle = gr.Dropdown(["English", "French"], label="Choose a language")
 
             chatbot = gr.Chatbot(label="Navi")
+            
             with gr.Row():
+                tts_button = gr.Button("Read Recent Message", scale=1)  # Left side
                 user_input = gr.Textbox(
                     label="Your Message",
                     placeholder="Hey Look! Listen Here!",
-                    lines=1
+                    lines=1,
+                    scale=8  # Takes up most of the space
                 )
-                send_button = gr.Button("Help!")
-                tts_button = gr.Button("Read Recent Message")
-            
+                send_button = gr.Button("⇨", elem_id="send_button", scale=1)  # Right side, Circular
+
             send_button.click(
                 fn=chat_with_bot_stream,
                 inputs=user_input,
@@ -175,17 +237,31 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
                 inputs=chatbot,
             )
 
-            # language_toggle.click(
-            #     fn=switch_language,
-            # )
-
             language_toggle.change(switch_language, inputs=language_toggle, outputs=None)
+
+            # Custom CSS for circular send button
+            '''demo.css = """
+            #send_button {
+                background-color: #0084ff;
+                color: white;
+                border-radius: 50%;
+                font-size: 20px;
+                width: 50px;
+                height: 50px;
+                text-align: center;
+                line-height: 50px;
+                border: none;
+                cursor: pointer;
+            }
+            """
+            '''
+
         
         with gr.TabItem("📜 Dungeon Solver"):
             gr.Markdown("## Solve a Dungeon!")
             gr.Markdown('Choose a dungeon to solve:')
             
-            storyboard_output = gr.Textbox(label="Generated Storyboard", interactive=False)
+            storyboard_output = gr.Textbox(label="Dungeon Info", interactive=False)
             user_input_box = gr.Textbox(label="Your Question", placeholder="Ask Navi about this dungeon!")
             
             for dungeon in [
@@ -201,7 +277,7 @@ with gr.Blocks(theme=gr.themes.Glass(primary_hue="violet", secondary_hue="violet
                     outputs=storyboard_output
                 )
 
-        with gr.TabItem("Summarize My Adventure"):
+        with gr.TabItem("🌟Summarize My Adventure"):
             gr.HTML(TITLE_Summary)
             summary_button = gr.Button("Summarize!")
             summary_script_output = gr.Textbox(label="Transcript of Summary", placeholder="Summary Here.", lines=5)
