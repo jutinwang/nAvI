@@ -106,16 +106,20 @@ def tts(chat_history):
         time.sleep(1)
 
 def summarize_conversation(chat_history):
-    # Extract only user queries from the chat history
-    user_queries = [msg[1] for msg in chat_history if msg[1]]
-    # Combine user queries into a single text
+    global language
+    lang = "en"
+    # Convert the script to audio
+    if language == "English":
+        lang = "en"
+    elif language == "French":
+        lang = "fr"
+
+    user_queries = [content for msg in chat_history for content in msg if content]
     conversation_text = "\n".join(user_queries)
     
-    # Generate podcast script
-    summary = generate_summary(conversation_text)
-    # Convert the script to audio
-    audio_path = tts_generator(summary)
-    # Return both the script and the audio file path
+    summary = generate_summary(conversation_text, language)
+    audio_path = tts_generator(summary, lang)
+
     return summary, audio_path
 
 def switch_language(option):
