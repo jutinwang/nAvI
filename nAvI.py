@@ -20,7 +20,12 @@ client = Groq(api_key=api_key)
 conversation_history = []
 
 # language toggler
-language = "english"
+language = "English"
+region = "Canada"
+measurement_system = "metric"
+temperature = "celsius"
+weight = "grams and kilograms"
+date_format = "YYYY - MM - DD"
 
 def chat_with_bot_stream(user_input):
     global conversation_history
@@ -29,7 +34,16 @@ def chat_with_bot_stream(user_input):
     if len(conversation_history) == 1:
         conversation_history.insert(0, {
             "role": "system",
-            "content": "You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. You speak like navi but are still clear on steps."
+            "content": f"""
+            You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. 
+            You speak like navi but are still clear on steps.
+            Always respond to a message using only {language}.
+            Your region is set to the {region}.
+            Whenever there are measurements, you will use the {measurement_system} system.
+            When you need to display the temperature, you will use {temperature}.
+            Mass will be measured in all iterations of {weight}.
+            You will dates in the format: {date_format}.
+            """
         },)
     
     completion = client.chat.completions.create(
@@ -78,9 +92,9 @@ def tts(chat_history):
     global language
     lang = "en"
     # Convert the script to audio
-    if language == "english":
+    if language == "English":
         lang = "en"
-    elif language == "french":
+    elif language == "French":
         lang = "fr"
     
     audio_path = tts_generator(chat_history[-1][1], lang)
@@ -105,28 +119,59 @@ def summarize_conversation(chat_history):
     return summary, audio_path
 
 def switch_language(option):
-    global conversation_history
+    global conversation_history, language
     print(option == "English")
 
-    if option == "English":
-        system_prompt = {
-            "role": "system",
-            "content": "You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. You speak like Navi but are still clear on steps. Your responses should all be in english."
-        }
+    language = option
 
-        conversation_history = [system_prompt] + [
-            msg for msg in conversation_history if msg["role"] != "system"
-        ]
+    update_system_prompt()
 
-    elif option == "French":
-        system_prompt = {
+def switch_regions(option):
+    global conversation_history, region, measurement_system, temperature, weight, date_format
+
+    if option == "Canada":
+        region = "Canada"
+        measurement_system = "metric"
+        temperature = "celsius"
+        weight = "grams and kilograms"
+        date_format = "YYYY - MM - DD"
+
+    elif option == "USA":
+        region = "United States of America"
+        measurement_system = "imperial"
+        temperature = "fahrenheit"
+        weight = "pounds"
+        date_format = "MM/DD/YYYY"
+
+    else:
+        region = "International"
+        measurement_system = "metric"
+        temperature = "celsius"
+        weight = "grams and kilograms"
+        date_format = "YYYY-MM-DD"
+
+    update_system_prompt()
+
+
+def update_system_prompt():
+    global conversation_history, region, language, measurement_system, temperature, weight
+
+    system_prompt = {
             "role": "system",
-            "content": "You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. You speak like Navi but are still clear on steps. Your responses should all be in french."
-        }
-        
-        conversation_history = [system_prompt] + [
-            msg for msg in conversation_history if msg["role"] != "system"
-        ]
+            "content": f"""
+            You are an expert on The Legend of Zelda Ocarina of Time and can give players guidance. 
+            You speak like navi but are still clear on steps.
+            Always respond to a message using only {language}.
+            Your region is set to the {region}.
+            Whenever there are measurements, you will use the {measurement_system} system.
+            When you need to display the temperature, you will use {temperature}.
+            Mass will be measured in all iterations of {weight}.
+            You will dates in the format: {date_format}.
+            """
+    }
+    conversation_history = [system_prompt] + [
+        msg for msg in conversation_history if msg["role"] != "system"
+    ]
 
 
 
@@ -207,7 +252,9 @@ with gr.Blocks(theme=theme) as demo:
     with gr.Tabs():
         with gr.TabItem("💬 Chat"):
             gr.HTML(TITLE)
-            language_toggle = gr.Dropdown(["English", "French"], label="Choose a language")
+            with gr.Row():
+                country_tottle = gr.Dropdown(["Canada", "USA", "International"], label="Region")
+                language_toggle = gr.Dropdown(["English", "French"], label="Choose a language")
 
             chatbot = gr.Chatbot(label="Navi")
             
@@ -219,7 +266,7 @@ with gr.Blocks(theme=theme) as demo:
                     lines=1,
                     scale=8  # Takes up most of the space
                 )
-                send_button = gr.Button("⇨", elem_id="send_button", scale=1)  # Right side, Circular
+                send_button = gr.Button("Send", elem_id="send_button", scale=1)  # Right side, Circular
 
             send_button.click(
                 fn=chat_with_bot_stream,
@@ -237,6 +284,7 @@ with gr.Blocks(theme=theme) as demo:
                 inputs=chatbot,
             )
 
+            country_tottle.change(switch_regions, inputs=country_tottle, outputs=None)
             language_toggle.change(switch_language, inputs=language_toggle, outputs=None)
 
             # Custom CSS for circular send button
@@ -256,7 +304,6 @@ with gr.Blocks(theme=theme) as demo:
             """
             '''
 
-        
         with gr.TabItem("📜 Dungeon Solver"):
             gr.Markdown("## Solve a Dungeon!")
             gr.Markdown('Choose a dungeon to solve:')
