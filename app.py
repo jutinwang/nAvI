@@ -2,7 +2,6 @@ import gradio as gr
 import os
 from groq import Groq
 from dotenv import load_dotenv
-import tempfile
 import time
 from pygame import mixer
 
@@ -17,15 +16,7 @@ api_key = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
 # Initialize conversation history
-# Initialize conversation history
 conversation_history = []
-
-def clear_chat():
-    global conversation_history
-    if conversation_history and conversation_history[0]["role"] == "system":
-        conversation_history = [conversation_history[0]]  # Keep only the system prompt
-    else:
-        conversation_history = []  # If no system prompt exists, clear everything
 
 # language toggler
 language = "English"
@@ -34,6 +25,16 @@ measurement_system = "metric"
 temperature = "celsius"
 weight = "grams and kilograms"
 date_format = "YYYY - MM - DD"
+
+def clear_chat():
+    global conversation_history
+    if conversation_history and conversation_history[0]["role"] == "system":
+        conversation_history = [conversation_history[0]]  # Keep only the system prompt
+    else:
+        conversation_history = []  # If no system prompt exists, clear everything
+
+def is_blank(input_string):
+    return input_string.strip() == ''
 
 def chat_with_bot_stream(user_input):
     conversation_history.append({"role": "user", "content": user_input})
@@ -188,13 +189,17 @@ def update_system_prompt():
         msg for msg in conversation_history if msg["role"] != "system"
     ]
 
-# ******************** Maybe Add ********************
-# def clear_history():
-#     global conversation_history
-#     if conversation_history and conversation_history[0]["role"] == "system":
-#         conversation_history = [conversation_history[0]]  # Keep only the system prompt
-#     else:
-#         conversation_history = []  # If no system prompt exists, clear everything
+def edit_message(new_message):
+    global conversation_history
+
+    if is_blank(new_message):
+        new_message = conversation_history[len(conversation_history) - 2]["content"]
+        
+    # Update the user message at the specified index
+    conversation_history.pop(len(conversation_history) - 1)
+    conversation_history.pop(len(conversation_history) - 1)
+
+    return chat_with_bot_stream(new_message)
 
 
 theme = gr.themes.Ocean(
@@ -242,8 +247,6 @@ theme = gr.themes.Ocean(
     button_secondary_text_color='*neutral_100',
     button_secondary_text_color_dark='*neutral_100',
 )
-
-
 
 TITLE = """
 <style>
@@ -319,9 +322,17 @@ with gr.Blocks(theme=theme) as demo:
             with gr.Row():
                 user_input = gr.Textbox(label="Your Message", placeholder="Hey Look! Listen Here!", lines=1, scale=8)
                 send_button = gr.Button("Send", elem_id="send_button", scale=1)
+            with gr.Row():
+                edit_user_input = gr.Textbox(label="Your Edited Message", placeholder="Edit Message!", lines=1, scale=8)
+                edit_send_button = gr.Button("Send", elem_id="send_button", scale=1)
+
 
             send_button.click(fn=chat_with_bot_stream, inputs=user_input, outputs=chatbot, queue=True).then(
                 fn=lambda: "", inputs=None, outputs=user_input
+            )
+
+            edit_send_button.click(fn=edit_message, inputs=edit_user_input, outputs=chatbot, queue=True).then(
+                fn=lambda: "", inputs=None, outputs=edit_user_input
             )
 
             country_tottle.change(switch_regions, inputs=country_tottle, outputs=None)
