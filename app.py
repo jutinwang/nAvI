@@ -22,8 +22,10 @@ conversation_history = []
 
 def clear_chat():
     global conversation_history
-    conversation_history = []  # Reset history when page loads
-    return []
+    if conversation_history and conversation_history[0]["role"] == "system":
+        conversation_history = [conversation_history[0]]  # Keep only the system prompt
+    else:
+        conversation_history = []  # If no system prompt exists, clear everything
 
 # language toggler
 language = "English"
