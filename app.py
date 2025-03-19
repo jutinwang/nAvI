@@ -17,7 +17,13 @@ api_key = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
 # Initialize conversation history
+# Initialize conversation history
 conversation_history = []
+
+def clear_chat():
+    global conversation_history
+    conversation_history = []  # Reset history when page loads
+    return []
 
 # language toggler
 language = "English"
@@ -295,40 +301,26 @@ Hey, Listen! Let me summarize our previous conversation so you can reflect on wh
 
 with gr.Blocks(theme=theme) as demo:
     with gr.Tabs():
-        with gr.TabItem("💬 Ocarina of Time Assistant "):
+        with gr.TabItem("💬 Chat"):
             gr.HTML(TITLE)
-            gr.HTML(SUB_TITLE)
+            
+            # Dropdowns
             with gr.Row():
                 country_tottle = gr.Dropdown(["Canada", "USA", "International"], label="Region")
                 language_toggle = gr.Dropdown(["English", "French"], label="Choose a language")
 
             chatbot = gr.Chatbot(label="Navi")
-            
+
+            # Clear chat on refresh
+            demo.load(clear_chat, inputs=None, outputs=chatbot)
+
             with gr.Row():
-                user_input = gr.Textbox(
-                    label="Your Message",
-                    placeholder="Hey Look! Listen Here!",
-                    lines=1,
-                    scale=8  # Takes up most of the space
-                )
-                send_button = gr.Button("Send", elem_id="send_button", scale=1)  # Right side, Circular
-                # clear_button = gr.Button("Clear Chat", elem_id="clear_button", scale=1)
+                user_input = gr.Textbox(label="Your Message", placeholder="Hey Look! Listen Here!", lines=1, scale=8)
+                send_button = gr.Button("Send", elem_id="send_button", scale=1)
 
-            send_button.click(
-                fn=chat_with_bot_stream,
-                inputs=user_input,
-                outputs=chatbot,
-                queue=True
-            ).then(
-                fn=lambda: "",
-                inputs=None,
-                outputs=user_input
+            send_button.click(fn=chat_with_bot_stream, inputs=user_input, outputs=chatbot, queue=True).then(
+                fn=lambda: "", inputs=None, outputs=user_input
             )
-
-            # clear_button.click(
-            #     fn=clear_history, 
-            #     outputs=chatbot
-            # )
 
             country_tottle.change(switch_regions, inputs=country_tottle, outputs=None)
             language_toggle.change(switch_language, inputs=language_toggle, outputs=None)
