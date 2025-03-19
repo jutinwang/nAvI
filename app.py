@@ -301,9 +301,9 @@ Hey, Listen! Let me summarize our previous conversation so you can reflect on wh
 
 with gr.Blocks(theme=theme) as demo:
     with gr.Tabs():
-        with gr.TabItem("💬 Chat"):
+        with gr.TabItem("💬 Ocarina of Time Assistant"):
             gr.HTML(TITLE)
-            
+            gr.HTML(SUB_TITLE)
             # Dropdowns
             with gr.Row():
                 country_tottle = gr.Dropdown(["Canada", "USA", "International"], label="Region")
