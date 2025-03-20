@@ -189,12 +189,13 @@ def update_system_prompt():
         msg for msg in conversation_history if msg["role"] != "system"
     ]
 
+
 def edit_message(new_message):
     global conversation_history
 
     if is_blank(new_message):
         new_message = conversation_history[len(conversation_history) - 2]["content"]
-        
+
     # Update the user message at the specified index
     conversation_history.pop(len(conversation_history) - 1)
     conversation_history.pop(len(conversation_history) - 1)
@@ -322,6 +323,8 @@ with gr.Blocks(theme=theme) as demo:
             with gr.Row():
                 user_input = gr.Textbox(label="Your Message", placeholder="Hey Look! Listen Here!", lines=1, scale=8)
                 send_button = gr.Button("Send", elem_id="send_button", scale=1)
+                clear_button = gr.Button("Clear Text", elem_id="clear_button", scale=1)
+
             with gr.Row():
                 edit_user_input = gr.Textbox(label="Your Edited Message", placeholder="Edit Message!", lines=1, scale=8)
                 edit_send_button = gr.Button("Send", elem_id="send_button", scale=1)
@@ -334,6 +337,8 @@ with gr.Blocks(theme=theme) as demo:
             edit_send_button.click(fn=edit_message, inputs=edit_user_input, outputs=chatbot, queue=True).then(
                 fn=lambda: "", inputs=None, outputs=edit_user_input
             )
+
+            clear_button.click(fn=clear_chat, inputs=None, outputs=chatbot, queue=True)
 
             country_tottle.change(switch_regions, inputs=country_tottle, outputs=None)
             language_toggle.change(switch_language, inputs=language_toggle, outputs=None)
@@ -389,4 +394,4 @@ with gr.Blocks(theme=theme) as demo:
                 outputs=[summary_script_output, summary_audio_output]
             )
 
-demo.launch(allowed_paths=["navi_logo.png"], share=False)
+demo.launch(allowed_paths=["navi_logo.png", "scroll_to_top.js"], share=False)
